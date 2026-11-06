@@ -43,17 +43,27 @@ document.querySelectorAll(".tab").forEach((t) => {
 
 /* ---------- home roulette ---------- */
 // refresh rolls a fresh word on home; "Another word" rolls + opens a new practice clip
-$("reroll").addEventListener("click", () => { state.autoDeal = true; rollWord().catch(() => {}); });
+$("reroll").addEventListener("click", () => { state.autoDeal = true; rollWord().catch(showRollError); });
 $("hero-go").addEventListener("click", () => {
   const h = state.hero;
   if (!h) return;
   const r = h.row;
   openTrainer(r.p.id, r.p.cues, r.p.src, { ci: r.ci, time: r.time, needle: h.word, dictate: true });
 });
-rollWord().catch(() => {});
+rollWord().catch(showRollError);
+
+function showRollError(error) {
+  state.autoDeal = false;
+  state.hero = null;
+  $("hero-go").disabled = true;
+  $("hero-info").textContent = "Could not pick a word. Press ↻ to try again.";
+  console.error("Random word selection failed", error);
+}
 
 async function rollWord() {
-  const packs = await dbAll().catch(() => []);
+  const packs = (await dbAll().catch(() => [])).filter((pack) =>
+    Array.isArray(pack?.cues) && pack.cues.length && pack.cues.every((cue) =>
+      Array.isArray(cue?.words) && cue.words.every((word) => typeof word?.text === "string")));
   const go = $("hero-go");
   go.disabled = true;
   // rolled word → search field + auto YouGlish clip; silent = background load, don't toast
@@ -64,7 +74,7 @@ async function rollWord() {
       if (!silent) toast((err && err.message) || "Search failed — one moment…", 4000);
     });
   };
-  if (!packs.length) {
+  function useDefaultWord() {
     // still let them hear a random word via YouGlish
     const w = B1_WORDS[(Math.random() * B1_WORDS.length) | 0];
     state.hero = null;
@@ -80,6 +90,7 @@ async function rollWord() {
     state.autoDeal = false;
     return;
   }
+  if (!packs.length) return useDefaultWord();
   go.onclick = null;
   go.textContent = "Practice this word in a real clip";
 
@@ -137,9 +148,7 @@ async function rollWord() {
     if (state.autoDeal) { state.autoDeal = false; go.click(); }
     return;
   }
-  $("hero-thumb").hidden = true;
-  $("hero-word").textContent = "…";
-  $("hero-info").textContent = "No B1/B2 word hit your corpus yet — add channels in My clips.";
+  useDefaultWord();
 }
 
 /* ---------- corpus / search ---------- */
@@ -435,11 +444,10 @@ YG.on("video", (e) => {
   $("yg-watch").href = "https://www.youtube.com/watch?v=" + encodeURIComponent(e.video);
   $("yg-empty").hidden = true;
   $("yg-actions").hidden = false;
-  $("yg-word").textContent = e.query;
+  window.dispatchEvent(new CustomEvent("kl-clip-word", { detail: e.query }));
   $("yg-position").textContent = `Clip ${e.position} of ${e.count}`;
   $("yg-prev").disabled = e.count < 2;
   $("yg-next").disabled = e.count < 2;
-  $("yg-translate").href = "https://www.arabdict.com/ar/deutsch-arabisch/" + encodeURIComponent(e.query.replace(/\s+/g, "+"));
   // hero banner tracks the active result clip (any index), not just the first
   if (state.ygVideo && $("hero-word").textContent && $("hero-word").textContent !== "…") {
     $("hero-thumb").style.background =
@@ -461,8 +469,6 @@ $("yg-playback-next").addEventListener("click", () => YG.ygNext());
 
 YG.on("caption", (e) => {
   state.ygCaption = (e.caption || "").replace(/\[\[\[|\]\]\]/g, "");
-  $("yg-caption").textContent = state.ygCaption;
-  $("yg-caption").hidden = !state.ygCaption;
 });
 
 $("search-form").addEventListener("submit", (e) => {

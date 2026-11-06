@@ -1,3 +1,5 @@
+import Translator from "./Translator";
+
 export default function TrainerView() {
   return (
     <section id="view-player" className="view" hidden>
@@ -70,6 +72,7 @@ export default function TrainerView() {
         <div className="practice-work">
         <div id="current-cue" aria-live="off"></div>
 
+        <Translator />
         <div className="cuebar"><button className="btn ghost mini" id="cue-toggle" type="button">Transcript</button></div>
         <aside id="cue-list" aria-label="Transcript" hidden></aside>
         </div>

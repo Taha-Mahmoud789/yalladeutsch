@@ -1,3 +1,5 @@
+import Translator from "./Translator";
+
 export default function HomeView() {
   return (
     <section id="view-home" className="view">
@@ -18,6 +20,7 @@ export default function HomeView() {
           <button className="btn primary" type="submit">Find clips</button>
         </form>
         <div className="yg-layout">
+          <div className="listen-media">
           <div className="yg-stage">
             <button className="btn ghost yg-arrow" id="yg-prev" type="button" aria-label="Previous clip" disabled>
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg>
@@ -33,13 +36,8 @@ export default function HomeView() {
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>
             </button>
           </div>
-          <aside className="yg-sidebar" aria-label="Clip and word tools">
-            <div className="yg-handoff" id="yg-handoff">
-              <h2 id="yg-word">Listening practice</h2>
+            <div className="yg-handoff" id="yg-handoff" aria-label="Playback controls">
               <p id="yg-position" className="hint" aria-live="polite">No clip selected</p>
-              <p id="yg-caption" className="yg-caption" hidden></p>
-              <label className="yg-volume-label" htmlFor="yg-volume">Volume <output id="yg-volume-value" htmlFor="yg-volume">100%</output></label>
-              <input id="yg-volume" type="range" min="0" max="100" step="1" defaultValue="100" />
               <div id="yg-actions" className="yg-actions" hidden>
                 <button className="btn ghost" id="yg-replay" type="button">Replay clip</button>
                 <button className="btn cyan" id="yg-train" type="button">Start typing</button>
@@ -52,8 +50,14 @@ export default function HomeView() {
               </div>
               <p className="hint" id="yg-train-status" role="status"></p>
               <button className="btn ghost" id="yg-try-next" type="button" hidden>Try next clip</button>
-              <a className="btn ghost" id="yg-translate" lang="ar" dir="rtl" target="_blank" rel="noopener noreferrer" aria-label="ترجم على عرب ديكت، يفتح في تبويب جديد">ترجم على عرب ديكت</a>
               </div>
+            </div>
+          </div>
+          <aside className="yg-sidebar" aria-label="Translation and word discovery">
+            <Translator currentWord />
+            <div className="yg-volume-panel">
+              <label className="yg-volume-label" htmlFor="yg-volume">Volume <output id="yg-volume-value" htmlFor="yg-volume">100%</output></label>
+              <input id="yg-volume" type="range" min="0" max="100" step="1" defaultValue="100" />
             </div>
             <section className="hero card">
               <div id="hero-thumb" hidden aria-hidden="true"></div>
