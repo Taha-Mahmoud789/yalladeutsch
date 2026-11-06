@@ -38,15 +38,9 @@ export default function TrainerView() {
           <span className="stat" id="st-time">0:00 / 0:00</span>
         </div>
 
-        </div>
-
-        <div className="practice-work">
-        <div id="current-cue" aria-live="off"></div>
-
-        <details className="fold" id="opts">
-          <summary>Options — speed, chunks, hearing only</summary>
+        <aside className="practice-options" aria-labelledby="practice-options-title">
+          <h2 id="practice-options-title">Practice options</h2>
           <div id="controls">
-            <label className="hint"><input type="checkbox" id="blind" /> Blind (hide text)</label>
             <label className="hint"><input type="checkbox" id="strict" /> Strict case &amp; ß</label>
             <label>Chunks
               <select id="word-limit" title="Words per typed part">
@@ -70,7 +64,11 @@ export default function TrainerView() {
               </select>
             </label>
           </div>
-        </details>
+        </aside>
+        </div>
+
+        <div className="practice-work">
+        <div id="current-cue" aria-live="off"></div>
 
         <div className="cuebar"><button className="btn ghost mini" id="cue-toggle" type="button">Transcript</button></div>
         <aside id="cue-list" aria-label="Transcript" hidden></aside>

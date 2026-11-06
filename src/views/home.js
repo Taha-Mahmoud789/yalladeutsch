@@ -77,7 +77,6 @@ async function rollWord() {
     // non-silent only on explicit button press; autoDeal must not re-hear loudly
     go.onclick = () => hear(w, false);
     hear(w, true);
-    // no practice clip without packs — don't go.click() (that re-runs hear non-silent)
     state.autoDeal = false;
     return;
   }

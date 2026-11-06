@@ -22,7 +22,6 @@ const state = {
   cur: -1,
   mode: "type",           // listen | type | shadow
   loop: false,
-  blind: false,
   pauseAtEnd: false,
   pauseAt: null,
   speed: 1,
@@ -84,6 +83,7 @@ $("nocap").addEventListener("change", (e) => {
   syncCueList();
   const input = $("dict-input");
   if (input) liveGrade(state.dictating);
+  else if (!state.shadow && state.cur >= 0) renderCue(state.cur);
 });
 
 /* mode tabs */
@@ -144,15 +144,12 @@ $("loop").addEventListener("click", () => {
   $("loop").classList.toggle("on", state.loop);
   toast(state.loop ? "Loop ON" : "Loop OFF", 1200);
 });
-$("blind").addEventListener("change", (e) => {
-  state.blind = e.target.checked;
-  if (state.cur >= 0 && !state.dictating && !state.shadow) renderCue(state.cur);
-});
 $("strict").checked = localStorage.getItem("klStrict") === "1";
 state.strict = $("strict").checked;
 $("strict").addEventListener("change", (e) => {
   state.strict = e.target.checked;
   localStorage.setItem("klStrict", e.target.checked ? "1" : "0");
+  if ($("dict-input")) liveGrade(state.dictating);
   toast(state.strict ? "Strict: case & ß count" : "Relaxed grading", 1500);
 });
 $("word-limit").value = String(state.wordLimit);
@@ -369,8 +366,8 @@ function renderCue(i) {
   const box = $("current-cue");
   if (i < 0) { box.innerHTML = ""; if (!state.dictating) setStats(lineLabel(-1)); return; }
   if (!state.dictating && !state.shadow) setStats(lineLabel(i));
-  if (state.blind && state.mode === "listen" && !state.dictating && !state.shadow) {
-    box.innerHTML = '<span class="hint">🙈 blind mode — press Replay to hear it</span>';
+  if (state.noCap && !state.dictating && !state.shadow) {
+    box.textContent = "Hearing only · use Replay to hear the line again";
     return;
   }
   const n = state.focus ? normalize(state.focus.needle) : "";
@@ -539,7 +536,7 @@ function renderDict() {
       e.preventDefault();
       d.hints.delete(d.entered.length - 1);
       inp.value = d.entered.pop();
-      liveGrade(d);
+      liveGrade(d, inp.value);
       return;
     }
     if (e.key === "ArrowUp") { e.preventDefault(); playChunk(d); }
@@ -606,12 +603,25 @@ function liveGrade(d, pending = $("dict-input")?.value.split(/\s+/).at(-1) || ""
       delete d.grades[i];
       d.hints.delete(i);
       slot.className = state.noCap ? "w slot" : "w ghost";
-      slot.textContent = typingStyle === "line" && i === done && pending
-        ? pending
-        : state.noCap ? "·".repeat(Math.max(2, d.tw[i].text.length)) : tidy(d.tw[i].text);
+      slot.textContent = state.noCap ? "·".repeat(Math.max(2, d.tw[i].text.length)) : tidy(d.tw[i].text);
     }
   }
   d.slots[done]?.classList.add("current");
+  if (d.slots[done] && pending && !state.noCap) {
+    const slot = d.slots[done];
+    const letters = Array.from(tidy(d.tw[done].text));
+    const options = { ...grOpts(), sentence: false };
+    const typed = normalize(pending, options);
+    let visible = 0;
+    for (let i = 1; i <= letters.length; i++) {
+      if (!typed.startsWith(normalize(letters.slice(0, i).join(""), options))) break;
+      visible = i;
+    }
+    const hidden = document.createElement("span");
+    hidden.className = "word-hidden";
+    hidden.textContent = letters.slice(visible).join("");
+    slot.replaceChildren(letters.slice(0, visible).join(""), hidden);
+  }
   d.statEl.textContent = done === d.tw.length ? "Edit a word or press Enter to finish" : statText(d, done);
   if (d.t0) {
     const seconds = (Date.now() - d.t0) / 1000;
@@ -990,7 +1000,7 @@ async function shadowAttempt() {
     const take = await rec.stop();
     rec = null;
     s.attempts++;
-    const m = matchSpoken(s.tw.map((w) => w.text), said.split(/\s+/), grOpts());
+    const m = matchSpoken(s.tw.map((w) => w.text), said.split(/\s+/));
     if (s.audioUrl) URL.revokeObjectURL(s.audioUrl);
     s.audioUrl = URL.createObjectURL(take);
     s.takeBtn.disabled = false;
